@@ -1,0 +1,2 @@
+# Local Grafana Cloud credentials — never commit (contains an access token).
+.env

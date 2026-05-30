@@ -1,0 +1,145 @@
+# Three rideshare app instances, one per region. They share the same image and
+# Grafana Cloud credentials (via the grafana-cloud-credentials Secret) and differ
+# only by their REGION env var. Each is fronted by a Service named after the
+# region so the load generator can reach it at http://<region>:5000.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: us-east
+  labels:
+    app: rideshare
+    region: us-east
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rideshare
+      region: us-east
+  template:
+    metadata:
+      labels:
+        app: rideshare
+        region: us-east
+    spec:
+      containers:
+        - name: rideshare
+          image: rideshare-rust:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: REGION
+              value: us-east
+          envFrom:
+            - secretRef:
+                name: grafana-cloud-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: us-east
+  labels:
+    app: rideshare
+    region: us-east
+spec:
+  selector:
+    app: rideshare
+    region: us-east
+  ports:
+    - port: 5000
+      targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eu-north
+  labels:
+    app: rideshare
+    region: eu-north
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rideshare
+      region: eu-north
+  template:
+    metadata:
+      labels:
+        app: rideshare
+        region: eu-north
+    spec:
+      containers:
+        - name: rideshare
+          image: rideshare-rust:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: REGION
+              value: eu-north
+          envFrom:
+            - secretRef:
+                name: grafana-cloud-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eu-north
+  labels:
+    app: rideshare
+    region: eu-north
+spec:
+  selector:
+    app: rideshare
+    region: eu-north
+  ports:
+    - port: 5000
+      targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ap-south
+  labels:
+    app: rideshare
+    region: ap-south
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rideshare
+      region: ap-south
+  template:
+    metadata:
+      labels:
+        app: rideshare
+        region: ap-south
+    spec:
+      containers:
+        - name: rideshare
+          image: rideshare-rust:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: REGION
+              value: ap-south
+          envFrom:
+            - secretRef:
+                name: grafana-cloud-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ap-south
+  labels:
+    app: rideshare
+    region: ap-south
+spec:
+  selector:
+    app: rideshare
+    region: ap-south
+  ports:
+    - port: 5000
+      targetPort: 5000

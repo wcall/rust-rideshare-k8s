@@ -1,0 +1,26 @@
+# Continuously drives traffic against the three regional rideshare Services so
+# the apps produce profiles. Mirrors the load-generator service from
+# docker-compose.yml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  labels:
+    app: rideshare
+    component: load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rideshare
+      component: load-generator
+  template:
+    metadata:
+      labels:
+        app: rideshare
+        component: load-generator
+    spec:
+      containers:
+        - name: load-generator
+          image: rideshare-rust-load-generator:latest
+          imagePullPolicy: IfNotPresent
