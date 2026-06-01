@@ -1,7 +1,6 @@
 # Three rideshare app instances, one per region. They share the same image and
-# Grafana Cloud credentials (via the grafana-cloud-credentials Secret) and differ
-# only by their REGION env var. Each is fronted by a Service named after the
-# region so the load generator can reach it at http://<region>:5000.
+# differ only by their REGION env var. Each is fronted by a Service named after
+# the region so the load generator can reach it at http://<region>:5000.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -31,9 +30,6 @@ spec:
           env:
             - name: REGION
               value: us-east
-          envFrom:
-            - secretRef:
-                name: grafana-cloud-credentials
 ---
 apiVersion: v1
 kind: Service
@@ -78,9 +74,6 @@ spec:
           env:
             - name: REGION
               value: eu-north
-          envFrom:
-            - secretRef:
-                name: grafana-cloud-credentials
 ---
 apiVersion: v1
 kind: Service
@@ -125,9 +118,6 @@ spec:
           env:
             - name: REGION
               value: ap-south
-          envFrom:
-            - secretRef:
-                name: grafana-cloud-credentials
 ---
 apiVersion: v1
 kind: Service

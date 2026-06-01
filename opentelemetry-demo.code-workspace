@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../../Workspace/Grafana/OTEL/opentelemetry-demo"
+		},
+		{
+			"path": "../../Workspace/Grafana/pyroscope"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}

@@ -1,8 +1,4 @@
-use std::sync::Arc;
-
 use chrono::prelude::*;
-use pyroscope::backend::{pprof_backend, BackendConfig, PprofConfig};
-use pyroscope::pyroscope::PyroscopeAgentBuilder;
 use warp::Filter;
 
 // Vehicle enum
@@ -14,81 +10,27 @@ enum Vehicle {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() {
     std::env::set_var("RUST_LOG", "trace");
 
     pretty_env_logger::init_timed();
 
-    let server_address = std::env::var("PYROSCOPE_SERVER_ADDRESS")
-        .unwrap_or_else(|_| "http://localhost:4040".to_string());
-    let region = std::env::var("REGION").unwrap_or_else(|_| "us-east".to_string());
+    let root = warp::path::end().map(|| "Rust rideshare service");
 
-    let app_name = std::env::var("PYROSCOPE_APPLICATION_NAME")
-        .unwrap_or_else(|_| "rust-ride-sharing-app".to_string());
-
-    let auth_user = std::env::var("PYROSCOPE_BASIC_AUTH_USER")
-        .unwrap_or_else(|_| "".to_string());
-
-    let auth_password = std::env::var("PYROSCOPE_BASIC_AUTH_PASSWORD")
-        .unwrap_or_else(|_| "".to_string());
-
-    let agent = PyroscopeAgentBuilder::new(
-        server_address,
-        app_name,
-        100,
-        "pyroscope-rs",
-        env!("CARGO_PKG_VERSION"),
-        pprof_backend(PprofConfig::default(), BackendConfig::default()),
-    )
-    .basic_auth(auth_user, auth_password)
-    .tags(vec![("region", &region)])
-    .build()
-    .unwrap();
-
-    let agent_running = agent.start()?;
-
-    // Root Route
-    let root = warp::path::end().map(|| {
-        // iterate throuh all env vars
-        let mut vars = String::new();
-        for (key, value) in std::env::vars() {
-            vars = format!("{} {} \n", vars, format!("{}={}", key, value));
-        }
-        vars
-    });
-
-    let (add_tag, remove_tag) = agent_running.tag_wrapper();
-    let add = Arc::new(add_tag);
-    let remove = Arc::new(remove_tag);
-
-    let bike = warp::path("bike").map(move || {
-        add("vehicle".to_string(), "bike".to_string());
+    let bike = warp::path("bike").map(|| {
         order_bike(1);
-        remove("vehicle".to_string(), "bike".to_string());
 
         "Bike ordered"
     });
 
-    let (add_tag, remove_tag) = agent_running.tag_wrapper();
-    let add = Arc::new(add_tag);
-    let remove = Arc::new(remove_tag);
-
-    let scooter = warp::path("scooter").map(move || {
-        add("vehicle".to_string(), "scooter".to_string());
+    let scooter = warp::path("scooter").map(|| {
         order_scooter(2);
-        remove("vehicle".to_string(), "scooter".to_string());
 
         "Scooter ordered"
     });
 
-    let (add_tag, remove_tag) = agent_running.tag_wrapper();
-    let add = Arc::new(add_tag);
-    let remove = Arc::new(remove_tag);
-
-    let car = warp::path("car").map(move || {
-        add("vehicle".to_string(), "car".to_string());
+    let car = warp::path("car").map(|| {
         order_car(3);
-        remove("vehicle".to_string(), "car".to_string());
 
         "Car ordered"
     });
@@ -96,12 +38,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let routes = warp::get().and(root).or(bike).or(scooter).or(car);
 
     warp::serve(routes).run(([0, 0, 0, 0], 5000)).await;
-
-    let agent_ready = agent_running.stop()?;
-
-    agent_ready.shutdown();
-
-    Ok(())
 }
 
 fn order_bike(n: u64) {

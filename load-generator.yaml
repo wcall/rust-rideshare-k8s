@@ -1,6 +1,5 @@
-# Continuously drives traffic against the three regional rideshare Services so
-# the apps produce profiles. Mirrors the load-generator service from
-# docker-compose.yml.
+# Continuously drives traffic against the three regional rideshare Services.
+# Mirrors the load-generator service from docker-compose.yml.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
