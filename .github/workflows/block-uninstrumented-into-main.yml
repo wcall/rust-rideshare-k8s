@@ -1,0 +1,26 @@
+name: Block uninstrumented into main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  block-uninstrumented-into-main:
+    name: block-uninstrumented-into-main
+    runs-on: ubuntu-latest
+    env:
+      PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - name: Check source branch
+        run: |
+          if [ "$PR_BASE_REF" = "main" ] && [ "$PR_HEAD_REF" = "uninstrumented" ]; then
+            echo "The uninstrumented branch must not be merged into main."
+            exit 1
+          fi
+
+          echo "Source branch is allowed."
