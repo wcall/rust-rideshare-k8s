@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [profile.release]
+# Rust requires frame pointers for eBPF profiling
+force-frame-pointers = true 
 opt-level=0
 debug = true
 rpath = true 

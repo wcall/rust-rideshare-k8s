@@ -14,6 +14,10 @@ demos, but profiling is not enabled by default:
 - `.env` and `.env.example` are retained for the optional instrumentation steps
   below.
 
+If you plan to profile this app with an eBPF profiler (for example Grafana
+Alloy) instead of the Rust SDK, see [eBPF profiling and frame pointers](#ebpf-profiling-and-frame-pointers)
+below — the release profile must be built with frame pointers enabled.
+
 The source originates from the upstream Pyroscope repo at
 [`examples/language-sdk-instrumentation/rust/rideshare`](https://github.com/grafana/pyroscope/tree/main/examples/language-sdk-instrumentation/rust/rideshare).
 
@@ -94,6 +98,37 @@ kubectl -n rideshare logs deploy/load-generator
 This version should generate traffic, but no profiles should appear in Grafana
 Cloud because there is no profiler in the app and no profiling credentials are
 mounted into the pods.
+
+## eBPF profiling and frame pointers
+
+eBPF profilers (such as the Grafana Alloy `pyroscope.ebpf` component) unwind
+stacks using **frame pointers**. By default the Rust release profile omits
+frame pointers as an optimization, so eBPF-collected stacks would be truncated
+or unsymbolized. To get complete stacks, the app must be compiled with frame
+pointers preserved.
+
+Enable them in `server/Cargo.toml` by setting `force-frame-pointers = true` on
+the release profile:
+
+```toml
+[profile.release]
+# Rust requires frame pointers for eBPF profiling
+force-frame-pointers = true
+opt-level = 0
+debug = true
+rpath = true
+lto = false
+debug-assertions = true
+codegen-units = 4
+```
+
+This repo already ships with `force-frame-pointers = true`, so the default
+image is ready for eBPF profiling. If you remove or disable that flag, rebuild
+the image (see [Build the images](#1-build-the-images)) before profiling so the
+change takes effect.
+
+Frame pointers are required only for eBPF-based profiling. The Rust SDK setup
+in the next section captures its own stacks and does not depend on this flag.
 
 ## Turn On Grafana Cloud Profiling
 
