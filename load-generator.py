@@ -2,6 +2,7 @@ import random
 import requests
 import time
 import threading
+from datetime import datetime
 
 HOSTS = [
     'us-east',
@@ -15,16 +16,19 @@ VEHICLES = [
     'car',
 ]
 
+def timestamp():
+    return datetime.now().astimezone().isoformat(timespec='seconds')
+
 def generate_load(host, vehicle):
     while True:
         start_time = time.time()
-        print(f"requesting {vehicle} from {host}")
+        print(f"{timestamp()} requesting {vehicle} from {host}")
         
         try:
             resp = requests.get(f'http://{host}:5000/{vehicle}')
             resp.raise_for_status()
             duration = time.time() - start_time
-            print(f"received {resp} in {duration:.2f}s from {host}/{vehicle}")
+            print(f"{timestamp()} received {resp} in {duration:.2f}s from {host}/{vehicle}")
             
             # Sleep to complete the 4-second cycle
             sleep_time = max(4 - duration, 0)
@@ -32,12 +36,12 @@ def generate_load(host, vehicle):
                 time.sleep(sleep_time)
                 
         except BaseException as e:
-            print(f"http error for {host}/{vehicle}: {e}")
+            print(f"{timestamp()} http error for {host}/{vehicle}: {e}")
             # On error, still maintain the 10-second cycle
             time.sleep(4)
 
 if __name__ == "__main__":
-    print(f"starting load generator with thread per region-vehicle combination")
+    print(f"{timestamp()} starting load generator with thread per region-vehicle combination")
     time.sleep(3)
     
     threads = []
@@ -48,11 +52,11 @@ if __name__ == "__main__":
             thread.daemon = True
             threads.append(thread)
             thread.start()
-            print(f"Started thread for {host}/{vehicle}")
+            print(f"{timestamp()} Started thread for {host}/{vehicle}")
     
     # Keep the main thread running
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Shutting down load generator")
+        print(f"{timestamp()} Shutting down load generator")
