@@ -1,5 +1,9 @@
 FROM rust:latest as deps
 
+# Force frame pointers so eBPF profilers (Pyroscope/Alloy, Parca) can unwind
+# stacks regardless of the optimization level used in [profile.release].
+ENV RUSTFLAGS="-C force-frame-pointers=yes"
+
 WORKDIR /usr/src/server
 # Copy only files needed for dependency resolution
 COPY server/Cargo.toml server/Cargo.lock ./

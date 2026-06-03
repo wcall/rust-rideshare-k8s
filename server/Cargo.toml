@@ -6,8 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [profile.release]
-# Rust requires frame pointers for eBPF profiling
-force-frame-pointers = true 
+# Frame pointers (required for eBPF profiling) are forced via the
+# RUSTFLAGS="-C force-frame-pointers=yes" build env in the Dockerfile, not a
+# profile key — `force-frame-pointers` is not a valid Cargo manifest key.
 opt-level=0
 debug = true
 rpath = true 

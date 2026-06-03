@@ -61,10 +61,10 @@ The Dockerfiles and app source are in this folder, so build straight from here:
 # from this folder (rust-rideshare-k8s)
 
 # App image (uses ./Dockerfile)
-docker build -t rideshare-rust:latest -f Dockerfile .
+docker build --no-cache -t rideshare-rust:latest -f Dockerfile .
 
 # Load generator image (uses ./Dockerfile.load-generator)
-docker build -t rideshare-rust-load-generator:latest -f Dockerfile.load-generator .
+docker build --no-cache -t rideshare-rust-load-generator:latest -f Dockerfile.load-generator .
 ```
 
 Load them into your local cluster, unless you pushed to a registry your cluster
@@ -102,30 +102,34 @@ mounted into the pods.
 ## eBPF profiling and frame pointers
 
 eBPF profilers (such as the Grafana Alloy `pyroscope.ebpf` component) unwind
-stacks using **frame pointers**. By default the Rust release profile omits
-frame pointers as an optimization, so eBPF-collected stacks would be truncated
-or unsymbolized. To get complete stacks, the app must be compiled with frame
-pointers preserved.
+stacks using **frame pointers**. By default the Rust compiler omits frame
+pointers when optimizations are enabled, so eBPF-collected stacks would be
+truncated or unsymbolized. To get complete stacks, the app must be compiled
+with frame pointers preserved.
 
-Enable them in `server/Cargo.toml` by setting `force-frame-pointers = true` on
-the release profile:
+Frame pointers are forced at the compiler level through `RUSTFLAGS` in the
+`Dockerfile`, set on the `deps` build stage (the `builder` stage is
+`FROM deps`, so it inherits the flag):
 
-```toml
-[profile.release]
-# Rust requires frame pointers for eBPF profiling
-force-frame-pointers = true
-opt-level = 0
-debug = true
-rpath = true
-lto = false
-debug-assertions = true
-codegen-units = 4
+```dockerfile
+FROM rust:latest as deps
+
+# Force frame pointers so eBPF profilers can unwind stacks regardless of the
+# optimization level used in [profile.release].
+ENV RUSTFLAGS="-C force-frame-pointers=yes"
 ```
 
-This repo already ships with `force-frame-pointers = true`, so the default
-image is ready for eBPF profiling. If you remove or disable that flag, rebuild
-the image (see [Build the images](#1-build-the-images)) before profiling so the
-change takes effect.
+This is the reliable mechanism: `force-frame-pointers` is **not** a valid Cargo
+manifest key, so setting it under `[profile.release]` in `server/Cargo.toml` has
+no effect (Cargo silently ignores it). Using `RUSTFLAGS` keeps frame pointers
+even if the release profile's `opt-level` is later raised above `0`. The release
+profile still sets `debug = true` and does not strip the binary, so eBPF stacks
+remain symbolized.
+
+This repo already ships with the `RUSTFLAGS` setting, so the default image is
+ready for eBPF profiling. If you remove it, rebuild the image (see
+[Build the images](#1-build-the-images)) before profiling so the change takes
+effect.
 
 Frame pointers are required only for eBPF-based profiling. The Rust SDK setup
 in the next section captures its own stacks and does not depend on this flag.
